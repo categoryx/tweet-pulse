@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: twitter
+    description: Twitter search and analysis
 paths:
   /healthz:
     get:
@@ -24,6 +25,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /twitter/search:
+    post:
+      operationId: searchTwitter
+      tags: [twitter]
+      summary: Search Twitter for a keyphrase
+      description: Searches Twitter, analyzes sentiment with AI, and returns full analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwitterSearchRequest"
+      responses:
+        "200":
+          description: Search results with analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwitterSearchResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /twitter/searches:
+    get:
+      operationId: listSearches
+      tags: [twitter]
+      summary: List previous searches
+      description: Returns a list of all previous search queries
+      responses:
+        "200":
+          description: List of searches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchHistoryItem"
+
+  /twitter/searches/{id}:
+    get:
+      operationId: getSearchResult
+      tags: [twitter]
+      summary: Get a previous search result
+      description: Returns the full result for a previous search
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwitterSearchResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +104,214 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    TwitterSearchRequest:
+      type: object
+      properties:
+        keyphrase:
+          type: string
+        maxResults:
+          type: integer
+          default: 50
+      required:
+        - keyphrase
+
+    TwitterSearchResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        keyphrase:
+          type: string
+        totalTweets:
+          type: integer
+        averageEngagement:
+          type: number
+        overallSentimentScore:
+          type: number
+        summary:
+          type: string
+        keyThemes:
+          type: array
+          items:
+            type: string
+        sentimentBreakdown:
+          $ref: "#/components/schemas/SentimentBreakdown"
+        topSources:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopSource"
+        topHashtags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        topMentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        volumeOverTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/VolumePoint"
+        tweets:
+          type: array
+          items:
+            $ref: "#/components/schemas/TweetItem"
+        searchedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - keyphrase
+        - totalTweets
+        - averageEngagement
+        - overallSentimentScore
+        - summary
+        - keyThemes
+        - sentimentBreakdown
+        - topSources
+        - topHashtags
+        - topMentions
+        - volumeOverTime
+        - tweets
+        - searchedAt
+
+    SentimentBreakdown:
+      type: object
+      properties:
+        positive:
+          type: integer
+        negative:
+          type: integer
+        neutral:
+          type: integer
+        positivePercent:
+          type: number
+        negativePercent:
+          type: number
+        neutralPercent:
+          type: number
+      required:
+        - positive
+        - negative
+        - neutral
+        - positivePercent
+        - negativePercent
+        - neutralPercent
+
+    TopSource:
+      type: object
+      properties:
+        username:
+          type: string
+        name:
+          type: string
+        profileImageUrl:
+          type: ["string", "null"]
+        tweetCount:
+          type: integer
+        followers:
+          type: integer
+        totalEngagement:
+          type: integer
+        averageSentiment:
+          type: number
+      required:
+        - username
+        - name
+        - tweetCount
+        - followers
+        - totalEngagement
+        - averageSentiment
+
+    TagCount:
+      type: object
+      properties:
+        tag:
+          type: string
+        count:
+          type: integer
+      required:
+        - tag
+        - count
+
+    VolumePoint:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+      required:
+        - date
+        - count
+
+    TweetItem:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        authorUsername:
+          type: string
+        authorName:
+          type: string
+        authorProfileImageUrl:
+          type: ["string", "null"]
+        authorFollowers:
+          type: integer
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+        sentimentScore:
+          type: number
+        likes:
+          type: integer
+        retweets:
+          type: integer
+        replies:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - text
+        - authorUsername
+        - authorName
+        - authorFollowers
+        - sentiment
+        - sentimentScore
+        - likes
+        - retweets
+        - replies
+        - createdAt
+
+    SearchHistoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        keyphrase:
+          type: string
+        totalTweets:
+          type: integer
+        overallSentimentScore:
+          type: number
+        searchedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - keyphrase
+        - totalTweets
+        - overallSentimentScore
+        - searchedAt

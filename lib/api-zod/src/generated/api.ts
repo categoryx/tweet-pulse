@@ -14,3 +14,163 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Searches Twitter, analyzes sentiment with AI, and returns full analytics
+ * @summary Search Twitter for a keyphrase
+ */
+export const searchTwitterBodyMaxResultsDefault = 50;
+
+export const SearchTwitterBody = zod.object({
+  keyphrase: zod.string(),
+  maxResults: zod.number().default(searchTwitterBodyMaxResultsDefault),
+});
+
+export const SearchTwitterResponse = zod.object({
+  id: zod.number(),
+  keyphrase: zod.string(),
+  totalTweets: zod.number(),
+  averageEngagement: zod.number(),
+  overallSentimentScore: zod.number(),
+  summary: zod.string(),
+  keyThemes: zod.array(zod.string()),
+  sentimentBreakdown: zod.object({
+    positive: zod.number(),
+    negative: zod.number(),
+    neutral: zod.number(),
+    positivePercent: zod.number(),
+    negativePercent: zod.number(),
+    neutralPercent: zod.number(),
+  }),
+  topSources: zod.array(
+    zod.object({
+      username: zod.string(),
+      name: zod.string(),
+      profileImageUrl: zod.string().nullish(),
+      tweetCount: zod.number(),
+      followers: zod.number(),
+      totalEngagement: zod.number(),
+      averageSentiment: zod.number(),
+    }),
+  ),
+  topHashtags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  topMentions: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  volumeOverTime: zod.array(
+    zod.object({
+      date: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  tweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      authorUsername: zod.string(),
+      authorName: zod.string(),
+      authorProfileImageUrl: zod.string().nullish(),
+      authorFollowers: zod.number(),
+      sentiment: zod.enum(["positive", "negative", "neutral"]),
+      sentimentScore: zod.number(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      createdAt: zod.date(),
+    }),
+  ),
+  searchedAt: zod.date(),
+});
+
+/**
+ * Returns a list of all previous search queries
+ * @summary List previous searches
+ */
+export const ListSearchesResponseItem = zod.object({
+  id: zod.number(),
+  keyphrase: zod.string(),
+  totalTweets: zod.number(),
+  overallSentimentScore: zod.number(),
+  searchedAt: zod.date(),
+});
+export const ListSearchesResponse = zod.array(ListSearchesResponseItem);
+
+/**
+ * Returns the full result for a previous search
+ * @summary Get a previous search result
+ */
+export const GetSearchResultParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetSearchResultResponse = zod.object({
+  id: zod.number(),
+  keyphrase: zod.string(),
+  totalTweets: zod.number(),
+  averageEngagement: zod.number(),
+  overallSentimentScore: zod.number(),
+  summary: zod.string(),
+  keyThemes: zod.array(zod.string()),
+  sentimentBreakdown: zod.object({
+    positive: zod.number(),
+    negative: zod.number(),
+    neutral: zod.number(),
+    positivePercent: zod.number(),
+    negativePercent: zod.number(),
+    neutralPercent: zod.number(),
+  }),
+  topSources: zod.array(
+    zod.object({
+      username: zod.string(),
+      name: zod.string(),
+      profileImageUrl: zod.string().nullish(),
+      tweetCount: zod.number(),
+      followers: zod.number(),
+      totalEngagement: zod.number(),
+      averageSentiment: zod.number(),
+    }),
+  ),
+  topHashtags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  topMentions: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  volumeOverTime: zod.array(
+    zod.object({
+      date: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  tweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      authorUsername: zod.string(),
+      authorName: zod.string(),
+      authorProfileImageUrl: zod.string().nullish(),
+      authorFollowers: zod.number(),
+      sentiment: zod.enum(["positive", "negative", "neutral"]),
+      sentimentScore: zod.number(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      createdAt: zod.date(),
+    }),
+  ),
+  searchedAt: zod.date(),
+});

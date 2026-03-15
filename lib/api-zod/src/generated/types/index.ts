@@ -6,4 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./searchHistoryItem";
+export * from "./sentimentBreakdown";
+export * from "./tagCount";
+export * from "./topSource";
+export * from "./tweetItem";
+export * from "./tweetItemSentiment";
+export * from "./twitterSearchRequest";
+export * from "./twitterSearchResult";
+export * from "./volumePoint";

@@ -5,18 +5,27 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  HealthStatus,
+  SearchHistoryItem,
+  TwitterSearchRequest,
+  TwitterSearchResult,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +101,257 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Searches Twitter, analyzes sentiment with AI, and returns full analytics
+ * @summary Search Twitter for a keyphrase
+ */
+export const getSearchTwitterUrl = () => {
+  return `/api/twitter/search`;
+};
+
+export const searchTwitter = async (
+  twitterSearchRequest: TwitterSearchRequest,
+  options?: RequestInit,
+): Promise<TwitterSearchResult> => {
+  return customFetch<TwitterSearchResult>(getSearchTwitterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(twitterSearchRequest),
+  });
+};
+
+export const getSearchTwitterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchTwitter>>,
+    TError,
+    { data: BodyType<TwitterSearchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof searchTwitter>>,
+  TError,
+  { data: BodyType<TwitterSearchRequest> },
+  TContext
+> => {
+  const mutationKey = ["searchTwitter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof searchTwitter>>,
+    { data: BodyType<TwitterSearchRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return searchTwitter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SearchTwitterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof searchTwitter>>
+>;
+export type SearchTwitterMutationBody = BodyType<TwitterSearchRequest>;
+export type SearchTwitterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Search Twitter for a keyphrase
+ */
+export const useSearchTwitter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof searchTwitter>>,
+    TError,
+    { data: BodyType<TwitterSearchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof searchTwitter>>,
+  TError,
+  { data: BodyType<TwitterSearchRequest> },
+  TContext
+> => {
+  return useMutation(getSearchTwitterMutationOptions(options));
+};
+
+/**
+ * Returns a list of all previous search queries
+ * @summary List previous searches
+ */
+export const getListSearchesUrl = () => {
+  return `/api/twitter/searches`;
+};
+
+export const listSearches = async (
+  options?: RequestInit,
+): Promise<SearchHistoryItem[]> => {
+  return customFetch<SearchHistoryItem[]>(getListSearchesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSearchesQueryKey = () => {
+  return [`/api/twitter/searches`] as const;
+};
+
+export const getListSearchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSearches>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSearches>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSearchesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSearches>>> = ({
+    signal,
+  }) => listSearches({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSearches>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSearchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSearches>>
+>;
+export type ListSearchesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List previous searches
+ */
+
+export function useListSearches<
+  TData = Awaited<ReturnType<typeof listSearches>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSearches>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSearchesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the full result for a previous search
+ * @summary Get a previous search result
+ */
+export const getGetSearchResultUrl = (id: number) => {
+  return `/api/twitter/searches/${id}`;
+};
+
+export const getSearchResult = async (
+  id: number,
+  options?: RequestInit,
+): Promise<TwitterSearchResult> => {
+  return customFetch<TwitterSearchResult>(getGetSearchResultUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSearchResultQueryKey = (id: number) => {
+  return [`/api/twitter/searches/${id}`] as const;
+};
+
+export const getGetSearchResultQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSearchResult>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSearchResult>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSearchResultQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSearchResult>>> = ({
+    signal,
+  }) => getSearchResult(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSearchResult>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSearchResultQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSearchResult>>
+>;
+export type GetSearchResultQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a previous search result
+ */
+
+export function useGetSearchResult<
+  TData = Awaited<ReturnType<typeof getSearchResult>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSearchResult>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSearchResultQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

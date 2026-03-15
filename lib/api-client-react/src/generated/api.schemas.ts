@@ -8,3 +8,92 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface TwitterSearchRequest {
+  keyphrase: string;
+  maxResults?: number;
+}
+
+export interface SentimentBreakdown {
+  positive: number;
+  negative: number;
+  neutral: number;
+  positivePercent: number;
+  negativePercent: number;
+  neutralPercent: number;
+}
+
+export interface TopSource {
+  username: string;
+  name: string;
+  /** @nullable */
+  profileImageUrl?: string | null;
+  tweetCount: number;
+  followers: number;
+  totalEngagement: number;
+  averageSentiment: number;
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export interface VolumePoint {
+  date: string;
+  count: number;
+}
+
+export type TweetItemSentiment =
+  (typeof TweetItemSentiment)[keyof typeof TweetItemSentiment];
+
+export const TweetItemSentiment = {
+  positive: "positive",
+  negative: "negative",
+  neutral: "neutral",
+} as const;
+
+export interface TweetItem {
+  id: string;
+  text: string;
+  authorUsername: string;
+  authorName: string;
+  /** @nullable */
+  authorProfileImageUrl?: string | null;
+  authorFollowers: number;
+  sentiment: TweetItemSentiment;
+  sentimentScore: number;
+  likes: number;
+  retweets: number;
+  replies: number;
+  createdAt: string;
+}
+
+export interface TwitterSearchResult {
+  id: number;
+  keyphrase: string;
+  totalTweets: number;
+  averageEngagement: number;
+  overallSentimentScore: number;
+  summary: string;
+  keyThemes: string[];
+  sentimentBreakdown: SentimentBreakdown;
+  topSources: TopSource[];
+  topHashtags: TagCount[];
+  topMentions: TagCount[];
+  volumeOverTime: VolumePoint[];
+  tweets: TweetItem[];
+  searchedAt: string;
+}
+
+export interface SearchHistoryItem {
+  id: number;
+  keyphrase: string;
+  totalTweets: number;
+  overallSentimentScore: number;
+  searchedAt: string;
+}

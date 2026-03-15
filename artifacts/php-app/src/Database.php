@@ -3,13 +3,53 @@
 class Database {
     private static ?Database $instance = null;
     private PDO $pdo;
+    private string $driver;
 
     private function __construct() {
-        $url = getenv('DATABASE_URL');
-        if (!$url) {
-            throw new Exception('DATABASE_URL environment variable is not set');
+        $mysqlHost = getenv('MYSQL_HOST');
+        $mysqlUrl = getenv('MYSQL_URL');
+
+        if ($mysqlHost || $mysqlUrl) {
+            $this->driver = 'mysql';
+            $this->connectMySQL($mysqlHost, $mysqlUrl);
+        } else {
+            $url = getenv('DATABASE_URL');
+            if (!$url) {
+                throw new Exception('No database configured. Set MYSQL_HOST/MYSQL_URL or DATABASE_URL.');
+            }
+            $this->driver = 'pgsql';
+            $this->connectPostgreSQL($url);
         }
 
+        $this->initSchema();
+    }
+
+    private function connectMySQL(?string $host, ?string $url): void {
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ];
+
+        if ($url) {
+            $parsed = parse_url($url);
+            $h = $parsed['host'] ?? 'localhost';
+            $port = $parsed['port'] ?? 3306;
+            $dbname = ltrim($parsed['path'] ?? '/tweetpulse', '/');
+            $user = $parsed['user'] ?? 'root';
+            $pass = $parsed['pass'] ?? '';
+        } else {
+            $h = $host;
+            $port = getenv('MYSQL_PORT') ?: '3306';
+            $dbname = getenv('MYSQL_DATABASE') ?: 'tweetpulse';
+            $user = getenv('MYSQL_USER') ?: 'root';
+            $pass = getenv('MYSQL_PASSWORD') ?: '';
+        }
+
+        $dsn = "mysql:host={$h};port={$port};dbname={$dbname};charset=utf8mb4";
+        $this->pdo = new PDO($dsn, $user, $pass, $options);
+    }
+
+    private function connectPostgreSQL(string $url): void {
         $parsed = parse_url($url);
         $host = $parsed['host'] ?? 'localhost';
         $port = $parsed['port'] ?? 5432;
@@ -18,10 +58,6 @@ class Database {
         $pass = $parsed['pass'] ?? '';
 
         $dsn = "pgsql:host={$host};port={$port};dbname={$dbname}";
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ];
 
         $query = [];
         if (!empty($parsed['query'])) {
@@ -31,8 +67,10 @@ class Database {
             $dsn .= ';sslmode=disable';
         }
 
-        $this->pdo = new PDO($dsn, $user, $pass, $options);
-        $this->initSchema();
+        $this->pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
     }
 
     public static function getInstance(): self {
@@ -42,7 +80,62 @@ class Database {
         return self::$instance;
     }
 
+    public function getDriver(): string {
+        return $this->driver;
+    }
+
     private function initSchema(): void {
+        if ($this->driver === 'mysql') {
+            $this->initMySQL();
+        } else {
+            $this->initPostgreSQL();
+        }
+    }
+
+    private function initMySQL(): void {
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS searches (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                keyphrase TEXT NOT NULL,
+                total_tweets INT NOT NULL,
+                average_engagement FLOAT NOT NULL,
+                overall_sentiment_score FLOAT NOT NULL,
+                summary TEXT NOT NULL,
+                key_themes JSON NOT NULL,
+                sentiment_breakdown JSON NOT NULL,
+                top_sources JSON NOT NULL,
+                top_hashtags JSON NOT NULL,
+                top_mentions JSON NOT NULL,
+                volume_over_time JSON NOT NULL,
+                tweets JSON NOT NULL,
+                searched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS user_analyses (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username TEXT NOT NULL,
+                profile_data JSON NOT NULL,
+                total_tweets INT NOT NULL,
+                average_engagement FLOAT NOT NULL,
+                overall_sentiment_score FLOAT NOT NULL,
+                summary TEXT NOT NULL,
+                key_themes JSON NOT NULL,
+                sentiment_breakdown JSON NOT NULL,
+                top_hashtags JSON NOT NULL,
+                top_mentions JSON NOT NULL,
+                volume_over_time JSON NOT NULL,
+                posting_by_day_of_week JSON NOT NULL,
+                posting_by_hour JSON NOT NULL,
+                top_tweets JSON NOT NULL,
+                tweets JSON NOT NULL,
+                analyzed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+    }
+
+    private function initPostgreSQL(): void {
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS searches (
                 id SERIAL PRIMARY KEY,
@@ -102,7 +195,6 @@ class Database {
         $stmt = $this->pdo->prepare("
             INSERT INTO searches (keyphrase, total_tweets, average_engagement, overall_sentiment_score, summary, key_themes, sentiment_breakdown, top_sources, top_hashtags, top_mentions, volume_over_time, tweets)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            RETURNING id
         ");
         $stmt->execute([
             $data['keyphrase'],
@@ -118,7 +210,7 @@ class Database {
             json_encode($data['volumeOverTime']),
             json_encode($data['tweets']),
         ]);
-        return (int)$stmt->fetchColumn();
+        return (int)$this->pdo->lastInsertId();
     }
 
     public function deleteSearch(int $id): void {
@@ -143,7 +235,6 @@ class Database {
         $stmt = $this->pdo->prepare("
             INSERT INTO user_analyses (username, profile_data, total_tweets, average_engagement, overall_sentiment_score, summary, key_themes, sentiment_breakdown, top_hashtags, top_mentions, volume_over_time, posting_by_day_of_week, posting_by_hour, top_tweets, tweets)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            RETURNING id
         ");
         $stmt->execute([
             $data['username'],
@@ -162,7 +253,7 @@ class Database {
             json_encode($data['topTweets']),
             json_encode($data['tweets']),
         ]);
-        return (int)$stmt->fetchColumn();
+        return (int)$this->pdo->lastInsertId();
     }
 
     public function deleteUserAnalysis(int $id): void {

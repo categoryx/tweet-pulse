@@ -8,7 +8,7 @@ Tweet Pulse — a full-stack Twitter/X News Intelligence Dashboard with two main
 
 ### PHP Application (Primary — `artifacts/php-app`)
 - **Language**: PHP 8.4 (built-in development server)
-- **Database**: PostgreSQL via PDO (same shared database)
+- **Database**: MySQL/MariaDB via PDO (primary), PostgreSQL via PDO (fallback)
 - **Frontend**: Server-rendered HTML + Tailwind CSS (CDN) + Chart.js (CDN)
 - **AI**: OpenAI via Replit AI Integrations (gpt-4o-mini for sentiment + summaries)
 - **External API**: Twitter/X API v2 (Bearer Token via cURL)
@@ -29,7 +29,7 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── php-app/               # PHP full-stack app (primary)
 │   │   ├── public/index.php   # Front controller + router
-│   │   ├── src/Database.php   # PDO PostgreSQL connection + schema init
+│   │   ├── src/Database.php   # PDO MySQL/PostgreSQL connection + schema init
 │   │   ├── src/Twitter.php    # Twitter API v2 client (cURL)
 │   │   ├── src/OpenAI.php     # OpenAI sentiment + summary (cURL)
 │   │   └── templates/         # Server-rendered PHP templates
@@ -68,7 +68,21 @@ artifacts-monorepo/
 - `TWITTER_BEARER_TOKEN` — Twitter/X API v2 Bearer Token (secret)
 - `AI_INTEGRATIONS_OPENAI_BASE_URL` — Auto-configured by Replit AI Integrations
 - `AI_INTEGRATIONS_OPENAI_API_KEY` — Auto-configured by Replit AI Integrations
-- `DATABASE_URL` — Auto-configured by Replit PostgreSQL
+- `DATABASE_URL` — Auto-configured by Replit PostgreSQL (fallback database)
+- `MYSQL_HOST` — MySQL/MariaDB host (primary database, if available)
+- `MYSQL_PORT` — MySQL/MariaDB port (default: 3306)
+- `MYSQL_USER` — MySQL/MariaDB user (default: root)
+- `MYSQL_PASSWORD` — MySQL/MariaDB password
+- `MYSQL_DATABASE` — MySQL/MariaDB database name (default: tweetpulse)
+- `MYSQL_URL` — MySQL connection URL (alternative to individual MYSQL_* vars)
+
+## PHP App Database Configuration
+
+The PHP app's Database.php uses a dual-driver approach:
+1. **MySQL (primary)**: Checks for `MYSQL_HOST` or `MYSQL_URL` environment variables. Uses `pdo_mysql` driver with `AUTO_INCREMENT`, `JSON` columns, `TIMESTAMP`, InnoDB engine.
+2. **PostgreSQL (fallback)**: Uses `DATABASE_URL` if no MySQL config is found. Uses `pdo_pgsql` driver with `SERIAL`, `JSONB` columns, `TIMESTAMPTZ`.
+
+All queries use standard SQL and `lastInsertId()` for cross-driver compatibility.
 
 ## PHP App Routes
 
@@ -84,6 +98,6 @@ artifacts-monorepo/
 
 ## Database Schema
 
-Both PHP and Node.js apps share the same PostgreSQL database with:
-- `searches` table — Keyphrase search results with sentiment data, tweets, AI summary (JSONB columns)
-- `user_analyses` table — User account analysis with profile data, posting patterns, top tweets, AI summary (JSONB columns)
+Both `searches` and `user_analyses` tables store results with JSON/JSONB columns for flexible data:
+- `searches` table — Keyphrase search results with sentiment data, tweets, AI summary
+- `user_analyses` table — User account analysis with profile data, posting patterns, top tweets, AI summary

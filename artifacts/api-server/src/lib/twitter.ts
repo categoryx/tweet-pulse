@@ -74,7 +74,7 @@ export async function searchTweets(keyphrase: string, maxResults: number = 50): 
     throw new Error(`Twitter API error (${response.status}): ${errorText}`);
   }
 
-  const json: TwitterSearchResponse = await response.json();
+  const json = (await response.json()) as TwitterSearchResponse;
 
   if (!json.data || json.data.length === 0) {
     return [];

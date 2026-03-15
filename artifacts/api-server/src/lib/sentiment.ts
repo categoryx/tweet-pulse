@@ -13,7 +13,7 @@ export async function analyzeSentimentBatch(
 
   const batchResults = await batchProcess(
     tweets,
-    async (tweet) => {
+    async (tweet: { id: string; text: string }) => {
       const response = await openai.chat.completions.create({
         model: "gpt-5-mini",
         max_completion_tokens: 100,
@@ -44,12 +44,10 @@ export async function analyzeSentimentBatch(
   );
 
   for (const result of batchResults) {
-    if (result.status === "fulfilled") {
-      results.set(result.value.id, {
-        sentiment: result.value.sentiment,
-        score: result.value.score,
-      });
-    }
+    results.set(result.id, {
+      sentiment: result.sentiment,
+      score: result.score,
+    });
   }
 
   return results;

@@ -44,6 +44,18 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
+# PHP
+vendor/
+*.log
+.env
+.env.*
+!.env.example
+
 # Replit
 .cache/
 .local/
+.replit
+replit.nix
+.upm/
+generated-*
+.config/

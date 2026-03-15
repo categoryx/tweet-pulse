@@ -83,7 +83,7 @@ $totalSent = $sb['positive'] + $sb['negative'] + $sb['neutral'];
                 <?php foreach ($result['topSources'] as $src): ?>
                     <tr class="hover:bg-dark-700">
                         <td class="py-2.5">
-                            <a href="https://x.com/<?= htmlspecialchars($src['username']) ?>" target="_blank" class="flex items-center gap-2 text-blue-400 hover:text-blue-300">
+                            <a href="https://x.com/<?= htmlspecialchars($src['username']) ?>" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-400 hover:text-blue-300">
                                 <?php if (!empty($src['profileImageUrl'])): ?>
                                     <img src="<?= htmlspecialchars($src['profileImageUrl']) ?>" class="w-6 h-6 rounded-full" alt="">
                                 <?php endif; ?>
@@ -127,7 +127,7 @@ $totalSent = $sb['positive'] + $sb['negative'] + $sb['neutral'];
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
-                            <a href="https://x.com/<?= htmlspecialchars($tweet['authorUsername']) ?>" target="_blank" class="text-sm font-medium text-blue-400 hover:text-blue-300">@<?= htmlspecialchars($tweet['authorUsername']) ?></a>
+                            <a href="https://x.com/<?= htmlspecialchars($tweet['authorUsername']) ?>" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-400 hover:text-blue-300">@<?= htmlspecialchars($tweet['authorUsername']) ?></a>
                             <span class="text-xs px-2 py-0.5 rounded-full <?= $tweet['sentiment'] === 'positive' ? 'bg-green-500/10 text-green-400' : ($tweet['sentiment'] === 'negative' ? 'bg-red-500/10 text-red-400' : 'bg-gray-500/10 text-gray-400') ?>">
                                 <?= $tweet['sentiment'] ?>
                             </span>

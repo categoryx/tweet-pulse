@@ -2,7 +2,7 @@
 $sb = $result['sentimentBreakdown'];
 $pd = $result['profileData'];
 ?>
-<script>window.__userData = <?= json_encode($result) ?>;</script>
+<script>window.__userData = <?= json_encode($result, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
 
 <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-4">

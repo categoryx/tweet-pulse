@@ -166,7 +166,6 @@ components:
             $ref: "#/components/schemas/TweetItem"
         searchedAt:
           type: string
-          format: date-time
       required:
         - id
         - keyphrase
@@ -281,7 +280,6 @@ components:
           type: integer
         createdAt:
           type: string
-          format: date-time
       required:
         - id
         - text
@@ -308,7 +306,6 @@ components:
           type: number
         searchedAt:
           type: string
-          format: date-time
       required:
         - id
         - keyphrase

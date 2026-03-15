@@ -84,10 +84,10 @@ export const SearchTwitterResponse = zod.object({
       likes: zod.number(),
       retweets: zod.number(),
       replies: zod.number(),
-      createdAt: zod.date(),
+      createdAt: zod.string(),
     }),
   ),
-  searchedAt: zod.date(),
+  searchedAt: zod.string(),
 });
 
 /**
@@ -99,7 +99,7 @@ export const ListSearchesResponseItem = zod.object({
   keyphrase: zod.string(),
   totalTweets: zod.number(),
   overallSentimentScore: zod.number(),
-  searchedAt: zod.date(),
+  searchedAt: zod.string(),
 });
 export const ListSearchesResponse = zod.array(ListSearchesResponseItem);
 
@@ -169,8 +169,8 @@ export const GetSearchResultResponse = zod.object({
       likes: zod.number(),
       retweets: zod.number(),
       replies: zod.number(),
-      createdAt: zod.date(),
+      createdAt: zod.string(),
     }),
   ),
-  searchedAt: zod.date(),
+  searchedAt: zod.string(),
 });

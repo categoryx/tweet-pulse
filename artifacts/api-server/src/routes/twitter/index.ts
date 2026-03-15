@@ -11,6 +11,86 @@ import {
 import { searchTweets, type RawTweetData } from "../../lib/twitter";
 import { analyzeSentimentBatch, generateSummary } from "../../lib/sentiment";
 
+interface SentimentBreakdownData {
+  positive: number;
+  negative: number;
+  neutral: number;
+  positivePercent: number;
+  negativePercent: number;
+  neutralPercent: number;
+}
+
+interface TopSourceData {
+  username: string;
+  name: string;
+  profileImageUrl: string | null;
+  tweetCount: number;
+  followers: number;
+  totalEngagement: number;
+  averageSentiment: number;
+}
+
+interface TagCountData {
+  tag: string;
+  count: number;
+}
+
+interface VolumePointData {
+  date: string;
+  count: number;
+}
+
+interface TweetItemData {
+  id: string;
+  text: string;
+  authorUsername: string;
+  authorName: string;
+  authorProfileImageUrl: string | null;
+  authorFollowers: number;
+  sentiment: string;
+  sentimentScore: number;
+  likes: number;
+  retweets: number;
+  replies: number;
+  createdAt: string;
+}
+
+interface SearchResultData {
+  id: number;
+  keyphrase: string;
+  totalTweets: number;
+  averageEngagement: number;
+  overallSentimentScore: number;
+  summary: string;
+  keyThemes: string[];
+  sentimentBreakdown: SentimentBreakdownData;
+  topSources: TopSourceData[];
+  topHashtags: TagCountData[];
+  topMentions: TagCountData[];
+  volumeOverTime: VolumePointData[];
+  tweets: TweetItemData[];
+  searchedAt: string;
+}
+
+function formatSearchResult(search: typeof searchesTable.$inferSelect): SearchResultData {
+  return {
+    id: search.id,
+    keyphrase: search.keyphrase,
+    totalTweets: search.totalTweets,
+    averageEngagement: search.averageEngagement,
+    overallSentimentScore: search.overallSentimentScore,
+    summary: search.summary,
+    keyThemes: search.keyThemes as string[],
+    sentimentBreakdown: search.sentimentBreakdown as SentimentBreakdownData,
+    topSources: search.topSources as TopSourceData[],
+    topHashtags: search.topHashtags as TagCountData[],
+    topMentions: search.topMentions as TagCountData[],
+    volumeOverTime: search.volumeOverTime as VolumePointData[],
+    tweets: search.tweets as TweetItemData[],
+    searchedAt: search.searchedAt.toISOString(),
+  };
+}
+
 const router: IRouter = Router();
 
 router.post("/twitter/search", async (req, res): Promise<void> => {
@@ -25,8 +105,9 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
   let rawTweets: RawTweetData[];
   try {
     rawTweets = await searchTweets(keyphrase, maxResults ?? 50);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || "Failed to search Twitter" });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to search Twitter";
+    res.status(400).json({ error: message });
     return;
   }
 
@@ -39,7 +120,7 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
     rawTweets.map((t) => ({ id: t.tweet.id, text: t.tweet.text }))
   );
 
-  const tweetsWithSentiment = rawTweets.map((raw) => {
+  const tweetsWithSentiment: TweetItemData[] = rawTweets.map((raw) => {
     const sentiment = sentimentMap.get(raw.tweet.id) || {
       sentiment: "neutral" as const,
       score: 0,
@@ -65,7 +146,7 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
   const neutral = tweetsWithSentiment.filter((t) => t.sentiment === "neutral").length;
   const total = tweetsWithSentiment.length;
 
-  const sentimentBreakdown = {
+  const sentimentBreakdown: SentimentBreakdownData = {
     positive,
     negative,
     neutral,
@@ -120,7 +201,7 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
     }
   }
 
-  const topSources = Array.from(sourceMap.values())
+  const topSources: TopSourceData[] = Array.from(sourceMap.values())
     .map((s) => ({
       username: s.username,
       name: s.name,
@@ -148,12 +229,12 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
     }
   }
 
-  const topHashtags = Array.from(hashtagMap.entries())
+  const topHashtags: TagCountData[] = Array.from(hashtagMap.entries())
     .map(([tag, count]) => ({ tag: `#${tag}`, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 15);
 
-  const topMentions = Array.from(mentionMap.entries())
+  const topMentions: TagCountData[] = Array.from(mentionMap.entries())
     .map(([tag, count]) => ({ tag: `@${tag}`, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 15);
@@ -163,7 +244,7 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
     const date = tweet.createdAt ? tweet.createdAt.split("T")[0] : "unknown";
     dateMap.set(date, (dateMap.get(date) || 0) + 1);
   }
-  const volumeOverTime = Array.from(dateMap.entries())
+  const volumeOverTime: VolumePointData[] = Array.from(dateMap.entries())
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -191,23 +272,7 @@ router.post("/twitter/search", async (req, res): Promise<void> => {
     })
     .returning();
 
-  const result = {
-    id: savedSearch.id,
-    keyphrase: savedSearch.keyphrase,
-    totalTweets: savedSearch.totalTweets,
-    averageEngagement: savedSearch.averageEngagement,
-    overallSentimentScore: savedSearch.overallSentimentScore,
-    summary: savedSearch.summary,
-    keyThemes: savedSearch.keyThemes as string[],
-    sentimentBreakdown: savedSearch.sentimentBreakdown as any,
-    topSources: savedSearch.topSources as any[],
-    topHashtags: savedSearch.topHashtags as any[],
-    topMentions: savedSearch.topMentions as any[],
-    volumeOverTime: savedSearch.volumeOverTime as any[],
-    tweets: savedSearch.tweets as any[],
-    searchedAt: savedSearch.searchedAt.toISOString(),
-  };
-
+  const result = formatSearchResult(savedSearch);
   res.json(SearchTwitterResponse.parse(result));
 });
 
@@ -248,23 +313,7 @@ router.get("/twitter/searches/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const result = {
-    id: search.id,
-    keyphrase: search.keyphrase,
-    totalTweets: search.totalTweets,
-    averageEngagement: search.averageEngagement,
-    overallSentimentScore: search.overallSentimentScore,
-    summary: search.summary,
-    keyThemes: search.keyThemes as string[],
-    sentimentBreakdown: search.sentimentBreakdown as any,
-    topSources: search.topSources as any[],
-    topHashtags: search.topHashtags as any[],
-    topMentions: search.topMentions as any[],
-    volumeOverTime: search.volumeOverTime as any[],
-    tweets: search.tweets as any[],
-    searchedAt: search.searchedAt.toISOString(),
-  };
-
+  const result = formatSearchResult(search);
   res.json(GetSearchResultResponse.parse(result));
 });
 

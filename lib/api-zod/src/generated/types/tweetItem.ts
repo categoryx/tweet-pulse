@@ -20,5 +20,5 @@ export interface TweetItem {
   likes: number;
   retweets: number;
   replies: number;
-  createdAt: Date;
+  createdAt: string;
 }

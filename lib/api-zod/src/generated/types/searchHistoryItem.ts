@@ -11,5 +11,5 @@ export interface SearchHistoryItem {
   keyphrase: string;
   totalTweets: number;
   overallSentimentScore: number;
-  searchedAt: Date;
+  searchedAt: string;
 }

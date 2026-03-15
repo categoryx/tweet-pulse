@@ -25,5 +25,5 @@ export interface TwitterSearchResult {
   topMentions: TagCount[];
   volumeOverTime: VolumePoint[];
   tweets: TweetItem[];
-  searchedAt: Date;
+  searchedAt: string;
 }

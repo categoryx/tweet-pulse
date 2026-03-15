@@ -115,7 +115,7 @@ function computeSentimentBreakdown(sentiments: Array<{ sentiment: string }>): Se
   };
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const router: IRouter = Router();
 
@@ -474,7 +474,7 @@ router.post("/twitter/user-analysis", async (req, res): Promise<void> => {
       const d = new Date(tweet.createdAt);
       const dateStr = tweet.createdAt.split("T")[0];
       dateMap.set(dateStr, (dateMap.get(dateStr) || 0) + 1);
-      const dayName = DAY_NAMES[d.getUTCDay()];
+      const dayName = DAY_NAMES[(d.getUTCDay() + 6) % 7];
       dayMap.set(dayName, (dayMap.get(dayName) || 0) + 1);
       hourMap.set(d.getUTCHours(), (hourMap.get(d.getUTCHours()) || 0) + 1);
     }

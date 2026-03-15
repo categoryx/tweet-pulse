@@ -39,6 +39,7 @@ import {
   ExternalLink,
   Trash2,
   Download,
+  BadgeCheck,
 } from "lucide-react";
 
 interface SentimentBreakdown {
@@ -417,6 +418,8 @@ function AnalysisDashboard({ result }: { result: UserAnalysisResult }) {
     ? Math.round(result.tweets.reduce((s, t) => s + t.likes, 0) / result.totalTweets) : 0;
   const avgRetweets = result.totalTweets > 0
     ? Math.round(result.tweets.reduce((s, t) => s + t.retweets, 0) / result.totalTweets) : 0;
+  const avgReplies = result.totalTweets > 0
+    ? Math.round(result.tweets.reduce((s, t) => s + t.replies, 0) / result.totalTweets) : 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -436,6 +439,9 @@ function AnalysisDashboard({ result }: { result: UserAnalysisResult }) {
                   className="text-lg font-bold hover:text-primary transition-colors flex items-center gap-1">
                   {profile.name} <ExternalLink className="w-3.5 h-3.5 opacity-50" />
                 </a>
+                {profile.verified && (
+                  <BadgeCheck className="w-5 h-5 text-blue-400" />
+                )}
               </div>
               <a href={`https://x.com/${profile.username}`} target="_blank" rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -464,11 +470,8 @@ function AnalysisDashboard({ result }: { result: UserAnalysisResult }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Heart} label="Avg Likes" value={formatNumber(avgLikes)} subtext="per tweet" color="text-pink-400" />
         <StatCard icon={Repeat2} label="Avg Retweets" value={formatNumber(avgRetweets)} subtext="per tweet" color="text-green-400" />
+        <StatCard icon={MessageSquare} label="Avg Replies" value={formatNumber(avgReplies)} subtext="per tweet" color="text-blue-400" />
         <StatCard icon={TrendingUp} label="Engagement Rate" value={`${engagementRate}%`} subtext="of followers" color="text-amber-400" />
-        <StatCard icon={BarChart3} label="Sentiment Score"
-          value={result.overallSentimentScore >= 0 ? `+${result.overallSentimentScore.toFixed(2)}` : result.overallSentimentScore.toFixed(2)}
-          subtext={result.overallSentimentScore > 0.2 ? "positive" : result.overallSentimentScore < -0.2 ? "negative" : "neutral"}
-          color={result.overallSentimentScore > 0.2 ? "text-green-400" : result.overallSentimentScore < -0.2 ? "text-red-400" : "text-gray-400"} />
       </div>
 
       <Card className="bg-card border-border">

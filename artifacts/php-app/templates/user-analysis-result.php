@@ -37,28 +37,37 @@ $pd = $result['profileData'];
     <?php endif; ?>
 </div>
 
+<?php
+$tweets = $result['tweets'] ?? [];
+$tweetCount = count($tweets);
+$avgLikes = $tweetCount > 0 ? round(array_sum(array_column($tweets, 'likes')) / $tweetCount) : 0;
+$avgRetweets = $tweetCount > 0 ? round(array_sum(array_column($tweets, 'retweets')) / $tweetCount) : 0;
+$avgReplies = $tweetCount > 0 ? round(array_sum(array_column($tweets, 'replies')) / $tweetCount) : 0;
+$followersCount = $pd['followersCount'] ?? 0;
+$engagementRate = ($followersCount > 0 && $tweetCount > 0)
+    ? round(($result['averageEngagement'] / $followersCount) * 100, 2)
+    : 0;
+?>
 <div class="grid grid-cols-4 gap-4 mb-6">
     <div class="bg-dark-800 border border-dark-600 rounded-lg p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Tweets Analyzed</p>
-        <p class="text-2xl font-bold text-white"><?= number_format($result['totalTweets']) ?></p>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Likes</p>
+        <p class="text-2xl font-bold text-pink-400"><?= number_format($avgLikes) ?></p>
+        <p class="text-xs text-gray-500 mt-1">per tweet</p>
     </div>
     <div class="bg-dark-800 border border-dark-600 rounded-lg p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Engagement</p>
-        <p class="text-2xl font-bold text-white"><?= number_format($result['averageEngagement'], 1) ?></p>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Retweets</p>
+        <p class="text-2xl font-bold text-green-400"><?= number_format($avgRetweets) ?></p>
+        <p class="text-xs text-gray-500 mt-1">per tweet</p>
     </div>
     <div class="bg-dark-800 border border-dark-600 rounded-lg p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Sentiment Score</p>
-        <p class="text-2xl font-bold <?= $result['overallSentimentScore'] >= 0.1 ? 'text-green-400' : ($result['overallSentimentScore'] <= -0.1 ? 'text-red-400' : 'text-yellow-400') ?>">
-            <?= number_format($result['overallSentimentScore'], 3) ?>
-        </p>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Replies</p>
+        <p class="text-2xl font-bold text-blue-400"><?= number_format($avgReplies) ?></p>
+        <p class="text-xs text-gray-500 mt-1">per tweet</p>
     </div>
     <div class="bg-dark-800 border border-dark-600 rounded-lg p-4">
-        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Sentiment Split</p>
-        <div class="flex items-center gap-2 mt-1">
-            <span class="text-xs text-green-400"><?= $sb['positivePercent'] ?>% +</span>
-            <span class="text-xs text-gray-400"><?= $sb['neutralPercent'] ?>% ~</span>
-            <span class="text-xs text-red-400"><?= $sb['negativePercent'] ?>% -</span>
-        </div>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Engagement Rate</p>
+        <p class="text-2xl font-bold text-purple-400"><?= $engagementRate ?>%</p>
+        <p class="text-xs text-gray-500 mt-1">of followers</p>
     </div>
 </div>
 

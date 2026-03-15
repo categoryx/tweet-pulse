@@ -34,6 +34,12 @@ try {
         handleUserAnalysisAction();
     } elseif ($method === 'GET' && preg_match('#^/user-analysis/(\d+)$#', $route, $m)) {
         handleUserAnalysisResult((int)$m[1]);
+    } elseif ($method === 'GET' && $route === '/api/searches') {
+        header('Content-Type: application/json');
+        echo json_encode(Database::getInstance()->getSearchHistory());
+    } elseif ($method === 'GET' && $route === '/api/user-analyses') {
+        header('Content-Type: application/json');
+        echo json_encode(Database::getInstance()->getUserAnalysisHistory());
     } elseif ($method === 'DELETE' && preg_match('#^/api/searches/(\d+)$#', $route, $m)) {
         header('Content-Type: application/json');
         handleDeleteSearch((int)$m[1]);

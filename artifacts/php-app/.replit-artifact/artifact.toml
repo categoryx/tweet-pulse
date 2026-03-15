@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/php-app/"
+title = "Tweet Pulse (PHP)"
+version = "1.0.0"
+id = "artifacts/php-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 24820
+name = "web"
+paths = ["/php-app/"]
+
+[services.development]
+run = "pnpm --filter @workspace/php-app run dev"
+
+[services.env]
+PORT = "24820"
+BASE_PATH = "/php-app/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/php-app", "run", "build"]
+publicDir = "artifacts/php-app/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

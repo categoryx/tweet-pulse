@@ -2,68 +2,66 @@
 
 ## Overview
 
-Tweet Pulse — a full-stack Twitter/X News Intelligence Dashboard with two main sections: Keyword Search Analytics and User Account Analysis.
+Tweet Pulse — a full-stack Twitter/X News Intelligence Dashboard with two main sections: Keyword Search Analytics and User Account Analysis. Available in two versions: original Node.js/React stack and new PHP server-rendered stack.
 
 ## Stack
 
+### PHP Application (Primary — `artifacts/php-app`)
+- **Language**: PHP 8.4 (built-in development server)
+- **Database**: PostgreSQL via PDO (same shared database)
+- **Frontend**: Server-rendered HTML + Tailwind CSS (CDN) + Chart.js (CDN)
+- **AI**: OpenAI via Replit AI Integrations (gpt-4o-mini for sentiment + summaries)
+- **External API**: Twitter/X API v2 (Bearer Token via cURL)
+- **No build step**: Pure PHP, served directly
+
+### Original Node.js/React Stack (artifacts/web + artifacts/api-server)
 - **Monorepo tool**: pnpm workspaces
 - **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
-- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + Recharts + wouter (routing)
-- **AI**: OpenAI via Replit AI Integrations (`gpt-5-mini` for sentiment + summaries)
-- **External API**: Twitter/X API v2 (Bearer Token)
+- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + Recharts + wouter
+- **AI**: OpenAI via Replit AI Integrations (gpt-4o-mini)
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   ├── api-server/         # Express API server
-│   └── web/                # React + Vite frontend (Tweet Pulse dashboard)
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   ├── db/                 # Drizzle ORM schema + DB connection
-│   └── integrations-openai-ai-server/  # OpenAI AI integration
-├── scripts/                # Utility scripts
+├── artifacts/
+│   ├── php-app/               # PHP full-stack app (primary)
+│   │   ├── public/index.php   # Front controller + router
+│   │   ├── src/Database.php   # PDO PostgreSQL connection + schema init
+│   │   ├── src/Twitter.php    # Twitter API v2 client (cURL)
+│   │   ├── src/OpenAI.php     # OpenAI sentiment + summary (cURL)
+│   │   └── templates/         # Server-rendered PHP templates
+│   ├── api-server/            # Express API server (original)
+│   └── web/                   # React + Vite frontend (original)
+├── lib/                       # Shared libraries (Node.js stack)
+├── scripts/
 ├── pnpm-workspace.yaml
-├── tsconfig.base.json
-├── tsconfig.json
 └── package.json
 ```
 
 ## Key Features
 
-### Keyword Search Section (/)
-- **Keyphrase Search**: Enter a topic and search Twitter's recent tweets
-- **Sentiment Analysis**: AI-powered per-tweet sentiment scoring (positive/negative/neutral)
-- **Dashboard Analytics**: Stat cards, sentiment pie chart, volume timeline, top sources table
-- **Top Hashtags & Mentions**: Bar charts showing trending tags
-- **AI Summary**: GPT-generated narrative summary with key themes
-- **Search History**: Sidebar to revisit previous searches stored in PostgreSQL
-- **Delete History**: Trash icon on hover to remove search records
-- **Clickable Profiles**: Author names/usernames link to x.com profiles
-- **CSV Export**: Download search results as CSV
-- **Tweet Feed**: Individual tweets with sentiment badges and engagement stats
+### Keyword Search Section
+- Keyphrase search with Twitter API v2
+- AI-powered per-tweet sentiment scoring (positive/negative/neutral)
+- Dashboard: stat cards, sentiment pie chart, volume timeline, top sources table
+- Top hashtags & mentions bar charts
+- AI summary with key themes
+- Search history sidebar with delete
+- Clickable x.com profile links
+- CSV export
 
-### User Account Analysis Section (/user-analysis)
-- **Username Lookup**: Fetch Twitter user profile by username
-- **Profile Card**: Avatar, bio, follower/following/tweet counts, join date, x.com link
-- **Sentiment Analysis**: Per-tweet sentiment on user's recent tweets
-- **Engagement Metrics**: Avg likes, retweets, engagement rate stat cards
-- **AI Account Analysis**: GPT-generated personality/style analysis with key themes
-- **Posting Patterns**: Day-of-week and hour-of-day bar charts
-- **Top Tweets Table**: Ranked by engagement with sentiment badges
-- **Top Hashtags & Mentions**: Horizontal bar charts
-- **Analysis History**: Sidebar with delete support
-- **CSV Export**: Download user analysis as CSV
+### User Account Analysis Section
+- Username lookup with profile card (avatar, bio, verified badge, follower stats)
+- Sentiment analysis on recent tweets
+- Engagement metric cards (avg likes, retweets, replies, engagement rate)
+- AI account personality analysis with key themes
+- Posting pattern charts (day-of-week, hour-of-day)
+- Top tweets by engagement table
+- Analysis history sidebar with delete
+- CSV export
 
 ## Environment Variables
 
@@ -72,49 +70,20 @@ artifacts-monorepo/
 - `AI_INTEGRATIONS_OPENAI_API_KEY` — Auto-configured by Replit AI Integrations
 - `DATABASE_URL` — Auto-configured by Replit PostgreSQL
 
-## API Endpoints
+## PHP App Routes
 
-- `POST /api/twitter/search` — Search Twitter, analyze sentiment, return full analytics
-- `GET /api/twitter/searches` — List previous search history
-- `GET /api/twitter/searches/:id` — Get a previous search result
-- `DELETE /api/twitter/searches/:id` — Delete a search record
-- `POST /api/twitter/user-analysis` — Analyze a Twitter user account
-- `GET /api/twitter/user-analyses` — List previous user analyses
-- `GET /api/twitter/user-analyses/:id` — Get a previous user analysis
-- `DELETE /api/twitter/user-analyses/:id` — Delete a user analysis record
+- `GET /` — Keyword Search page (empty state or with search form)
+- `POST /search` — Execute search, redirect to result
+- `GET /search/:id` — View search result
+- `GET /user-analysis` — User Analysis page
+- `POST /user-analysis` — Execute analysis, redirect to result
+- `GET /user-analysis/:id` — View analysis result
+- `DELETE /api/searches/:id` — Delete search record (JSON API)
+- `DELETE /api/user-analyses/:id` — Delete analysis record (JSON API)
+- `GET /api/healthz` — Health check
 
 ## Database Schema
 
-- `searches` table — Stores keyphrase search results with sentiment data, top sources, hashtags, mentions, tweets, AI summary (JSONB columns)
-- `user_analyses` table — Stores user account analysis results with profile data, posting patterns, top tweets, sentiment data, AI summary (JSONB columns)
-
-## TypeScript & Composite Projects
-
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.
-
-## Root Scripts
-
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
-
-## Packages
-
-### `artifacts/web` (`@workspace/web`)
-
-React + Vite frontend with dark theme dashboard. Uses Recharts for charts, shadcn/ui for components, wouter for routing. Two pages: `/` (keyword search) and `/user-analysis` (user analysis).
-
-### `artifacts/api-server` (`@workspace/api-server`)
-
-Express 5 API server. Routes in `src/routes/`. Twitter search/user analysis and AI analysis in `src/lib/`.
-
-### `lib/db` (`@workspace/db`)
-
-Database layer with `searches` and `user_analyses` tables for persisting results.
-
-### `lib/integrations-openai-ai-server`
-
-OpenAI SDK client for sentiment analysis and summary generation.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-OpenAPI 3.1 spec and Orval codegen config. Run: `pnpm --filter @workspace/api-spec run codegen`
+Both PHP and Node.js apps share the same PostgreSQL database with:
+- `searches` table — Keyphrase search results with sentiment data, tweets, AI summary (JSONB columns)
+- `user_analyses` table — User account analysis with profile data, posting patterns, top tweets, AI summary (JSONB columns)

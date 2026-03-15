@@ -1,0 +1,10 @@
+{
+  "name": "@workspace/php-app",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "php -S 0.0.0.0:${PORT:-24820} -t public",
+    "build": "echo 'No build step needed for PHP'",
+    "serve": "php -S 0.0.0.0:${PORT:-24820} -t public"
+  }
+}

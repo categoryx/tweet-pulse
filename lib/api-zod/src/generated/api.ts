@@ -174,3 +174,233 @@ export const GetSearchResultResponse = zod.object({
   ),
   searchedAt: zod.string(),
 });
+
+/**
+ * Deletes a search result by ID
+ * @summary Delete a previous search
+ */
+export const DeleteSearchParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteSearchResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * Fetches user profile and recent tweets, analyzes sentiment, and returns comprehensive analytics
+ * @summary Analyze a Twitter user account
+ */
+export const analyzeUserBodyMaxResultsDefault = 100;
+
+export const AnalyzeUserBody = zod.object({
+  username: zod.string(),
+  maxResults: zod.number().default(analyzeUserBodyMaxResultsDefault),
+});
+
+export const AnalyzeUserResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  profileData: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    username: zod.string(),
+    description: zod.string().nullish(),
+    createdAt: zod.string().nullish(),
+    verified: zod.boolean(),
+    profileImageUrl: zod.string().nullish(),
+    followersCount: zod.number(),
+    followingCount: zod.number(),
+    tweetCount: zod.number(),
+    listedCount: zod.number(),
+  }),
+  totalTweets: zod.number(),
+  averageEngagement: zod.number(),
+  overallSentimentScore: zod.number(),
+  summary: zod.string(),
+  keyThemes: zod.array(zod.string()),
+  sentimentBreakdown: zod.object({
+    positive: zod.number(),
+    negative: zod.number(),
+    neutral: zod.number(),
+    positivePercent: zod.number(),
+    negativePercent: zod.number(),
+    neutralPercent: zod.number(),
+  }),
+  topHashtags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  topMentions: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  volumeOverTime: zod.array(
+    zod.object({
+      date: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  postingByDayOfWeek: zod.array(
+    zod.object({
+      day: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  postingByHour: zod.array(
+    zod.object({
+      hour: zod.number(),
+      count: zod.number(),
+    }),
+  ),
+  topTweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      totalEngagement: zod.number(),
+      sentiment: zod.string(),
+      sentimentScore: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  tweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      sentiment: zod.enum(["positive", "negative", "neutral"]),
+      sentimentScore: zod.number(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  analyzedAt: zod.string(),
+});
+
+/**
+ * Returns a list of all previous user analyses
+ * @summary List previous user analyses
+ */
+export const ListUserAnalysesResponseItem = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  totalTweets: zod.number(),
+  overallSentimentScore: zod.number(),
+  analyzedAt: zod.string(),
+});
+export const ListUserAnalysesResponse = zod.array(ListUserAnalysesResponseItem);
+
+/**
+ * Returns the full result for a previous user analysis
+ * @summary Get a previous user analysis
+ */
+export const GetUserAnalysisParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetUserAnalysisResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  profileData: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    username: zod.string(),
+    description: zod.string().nullish(),
+    createdAt: zod.string().nullish(),
+    verified: zod.boolean(),
+    profileImageUrl: zod.string().nullish(),
+    followersCount: zod.number(),
+    followingCount: zod.number(),
+    tweetCount: zod.number(),
+    listedCount: zod.number(),
+  }),
+  totalTweets: zod.number(),
+  averageEngagement: zod.number(),
+  overallSentimentScore: zod.number(),
+  summary: zod.string(),
+  keyThemes: zod.array(zod.string()),
+  sentimentBreakdown: zod.object({
+    positive: zod.number(),
+    negative: zod.number(),
+    neutral: zod.number(),
+    positivePercent: zod.number(),
+    negativePercent: zod.number(),
+    neutralPercent: zod.number(),
+  }),
+  topHashtags: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  topMentions: zod.array(
+    zod.object({
+      tag: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  volumeOverTime: zod.array(
+    zod.object({
+      date: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  postingByDayOfWeek: zod.array(
+    zod.object({
+      day: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  postingByHour: zod.array(
+    zod.object({
+      hour: zod.number(),
+      count: zod.number(),
+    }),
+  ),
+  topTweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      totalEngagement: zod.number(),
+      sentiment: zod.string(),
+      sentimentScore: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  tweets: zod.array(
+    zod.object({
+      id: zod.string(),
+      text: zod.string(),
+      sentiment: zod.enum(["positive", "negative", "neutral"]),
+      sentimentScore: zod.number(),
+      likes: zod.number(),
+      retweets: zod.number(),
+      replies: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  analyzedAt: zod.string(),
+});
+
+/**
+ * Deletes a user analysis by ID
+ * @summary Delete a previous user analysis
+ */
+export const DeleteUserAnalysisParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteUserAnalysisResponse = zod.object({
+  success: zod.boolean(),
+});

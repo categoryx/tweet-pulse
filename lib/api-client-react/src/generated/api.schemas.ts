@@ -13,6 +13,10 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface DeleteResponse {
+  success: boolean;
+}
+
 export interface TwitterSearchRequest {
   keyphrase: string;
   maxResults?: number;
@@ -96,4 +100,96 @@ export interface SearchHistoryItem {
   totalTweets: number;
   overallSentimentScore: number;
   searchedAt: string;
+}
+
+export interface UserAnalysisRequest {
+  username: string;
+  maxResults?: number;
+}
+
+export interface UserProfileData {
+  id: string;
+  name: string;
+  username: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+  verified: boolean;
+  /** @nullable */
+  profileImageUrl?: string | null;
+  followersCount: number;
+  followingCount: number;
+  tweetCount: number;
+  listedCount: number;
+}
+
+export interface DayOfWeekCount {
+  day: string;
+  count: number;
+}
+
+export interface HourCount {
+  hour: number;
+  count: number;
+}
+
+export interface TopTweetItem {
+  id: string;
+  text: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  totalEngagement: number;
+  sentiment: string;
+  sentimentScore: number;
+  createdAt: string;
+}
+
+export type UserTweetItemSentiment =
+  (typeof UserTweetItemSentiment)[keyof typeof UserTweetItemSentiment];
+
+export const UserTweetItemSentiment = {
+  positive: "positive",
+  negative: "negative",
+  neutral: "neutral",
+} as const;
+
+export interface UserTweetItem {
+  id: string;
+  text: string;
+  sentiment: UserTweetItemSentiment;
+  sentimentScore: number;
+  likes: number;
+  retweets: number;
+  replies: number;
+  createdAt: string;
+}
+
+export interface UserAnalysisResult {
+  id: number;
+  username: string;
+  profileData: UserProfileData;
+  totalTweets: number;
+  averageEngagement: number;
+  overallSentimentScore: number;
+  summary: string;
+  keyThemes: string[];
+  sentimentBreakdown: SentimentBreakdown;
+  topHashtags: TagCount[];
+  topMentions: TagCount[];
+  volumeOverTime: VolumePoint[];
+  postingByDayOfWeek: DayOfWeekCount[];
+  postingByHour: HourCount[];
+  topTweets: TopTweetItem[];
+  tweets: UserTweetItem[];
+  analyzedAt: string;
+}
+
+export interface UserAnalysisHistoryItem {
+  id: number;
+  username: string;
+  totalTweets: number;
+  overallSentimentScore: number;
+  analyzedAt: string;
 }

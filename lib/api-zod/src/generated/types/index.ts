@@ -6,14 +6,24 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./dayOfWeekCount";
+export * from "./deleteResponse";
 export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./hourCount";
 export * from "./searchHistoryItem";
 export * from "./sentimentBreakdown";
 export * from "./tagCount";
 export * from "./topSource";
+export * from "./topTweetItem";
 export * from "./tweetItem";
 export * from "./tweetItemSentiment";
 export * from "./twitterSearchRequest";
 export * from "./twitterSearchResult";
+export * from "./userAnalysisHistoryItem";
+export * from "./userAnalysisRequest";
+export * from "./userAnalysisResult";
+export * from "./userProfileData";
+export * from "./userTweetItem";
+export * from "./userTweetItemSentiment";
 export * from "./volumePoint";

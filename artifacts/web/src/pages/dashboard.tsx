@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   PieChart,
@@ -20,7 +20,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import {
   Search,
@@ -38,7 +37,9 @@ import {
   ThumbsUp,
   ThumbsDown,
   Minus,
-  Activity,
+  ExternalLink,
+  Trash2,
+  Download,
 } from "lucide-react";
 interface SentimentBreakdown {
   positive: number;
@@ -148,6 +149,38 @@ function SentimentBadge({ sentiment }: { sentiment: string }) {
   );
 }
 
+function downloadSearchCsv(result: SearchResult) {
+  const headers = ["Tweet ID", "Author", "Username", "Followers", "Text", "Sentiment", "Score", "Likes", "Retweets", "Replies", "Date"];
+  const rows = result.tweets.map((t) => [
+    t.id,
+    `"${t.authorName.replace(/"/g, '""')}"`,
+    t.authorUsername,
+    t.authorFollowers.toString(),
+    `"${t.text.replace(/"/g, '""')}"`,
+    t.sentiment,
+    t.sentimentScore.toString(),
+    t.likes.toString(),
+    t.retweets.toString(),
+    t.replies.toString(),
+    t.createdAt,
+  ]);
+  const meta = [
+    `"Keyphrase: ${result.keyphrase}"`,
+    `"Total Tweets: ${result.totalTweets}"`,
+    `"Sentiment: ${result.overallSentimentScore}"`,
+    `"Avg Engagement: ${result.averageEngagement}"`,
+    `"Searched: ${result.searchedAt}"`,
+  ];
+  const csv = [meta.join(","), "", headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `search-${result.keyphrase.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function Dashboard() {
   const [searchInput, setSearchInput] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
@@ -157,6 +190,7 @@ export default function Dashboard() {
     queryKey: ["searches"],
     queryFn: async () => {
       const res = await fetch(`${BASE}/api/twitter/searches`);
+      if (!res.ok) throw new Error("Failed to load search history");
       return res.json();
     },
   });
@@ -192,6 +226,17 @@ export default function Dashboard() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${BASE}/api/twitter/searches/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: (_data, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["searches"] });
+      if (result?.id === deletedId) setResult(null);
+    },
+  });
+
   const handleSearch = () => {
     if (!searchInput.trim()) return;
     searchMutation.mutate(searchInput.trim());
@@ -200,28 +245,20 @@ export default function Dashboard() {
   const isLoading = searchMutation.isPending || loadResultMutation.isPending;
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
-      <div className="flex h-screen">
-        <aside className="w-72 border-r border-border bg-card flex flex-col">
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-5 h-5 text-primary" />
-              <h1 className="font-bold text-lg">Tweet Pulse</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">Twitter/X News Intelligence</p>
-          </div>
-          <div className="p-3 border-b border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-              <Clock className="w-3 h-3" /> Recent Searches
-            </p>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-2 space-y-1">
-              {historyQuery.data?.map((item) => (
+    <div className="flex h-full">
+      <aside className="w-72 border-r border-border bg-card flex flex-col">
+        <div className="p-3 border-b border-border">
+          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> Recent Searches
+          </p>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-2 space-y-1">
+            {historyQuery.data?.map((item) => (
+              <div key={item.id} className="group relative">
                 <button
-                  key={item.id}
                   onClick={() => loadResultMutation.mutate(item.id)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group"
+                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-accent transition-colors"
                 >
                   <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                     {item.keyphrase}
@@ -239,15 +276,25 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </button>
-              ))}
-              {historyQuery.data?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-8">
-                  No searches yet. Try searching for a topic above.
-                </p>
-              )}
-            </div>
-          </ScrollArea>
-        </aside>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Delete this search?")) deleteMutation.mutate(item.id);
+                  }}
+                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+            {historyQuery.data?.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-8">
+                No searches yet. Try searching for a topic above.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border bg-card">
@@ -291,7 +338,6 @@ export default function Dashboard() {
             {!isLoading && !result && <EmptyState />}
           </ScrollArea>
         </main>
-      </div>
     </div>
   );
 }
@@ -358,6 +404,9 @@ function ResultsDashboard({ result }: { result: SearchResult }) {
             Searched {formatDate(result.searchedAt)}
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => downloadSearchCsv(result)}>
+          <Download className="w-4 h-4 mr-1" /> Export CSV
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -535,8 +584,10 @@ function ResultsDashboard({ result }: { result: SearchResult }) {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-sm">{source.name}</p>
-                          <p className="text-xs text-muted-foreground">@{source.username}</p>
+                          <a href={`https://x.com/${source.username}`} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:text-primary transition-colors flex items-center gap-1">
+                            {source.name} <ExternalLink className="w-3 h-3 opacity-40" />
+                          </a>
+                          <a href={`https://x.com/${source.username}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">@{source.username}</a>
                         </div>
                       </div>
                     </td>
@@ -649,8 +700,8 @@ function ResultsDashboard({ result }: { result: SearchResult }) {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{tweet.authorName}</span>
-                      <span className="text-xs text-muted-foreground">@{tweet.authorUsername}</span>
+                      <a href={`https://x.com/${tweet.authorUsername}`} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:text-primary transition-colors">{tweet.authorName}</a>
+                      <a href={`https://x.com/${tweet.authorUsername}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">@{tweet.authorUsername}</a>
                       <span className="text-xs text-muted-foreground">
                         {formatNumber(tweet.authorFollowers)} followers
                       </span>

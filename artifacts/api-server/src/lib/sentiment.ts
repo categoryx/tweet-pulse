@@ -53,6 +53,47 @@ export async function analyzeSentimentBatch(
   return results;
 }
 
+export async function generateUserSummary(
+  username: string,
+  profile: { name: string; description: string | null; followersCount: number; followingCount: number; tweetCount: number },
+  tweets: Array<{ text: string; sentiment: string }>,
+  sentimentBreakdown: { positive: number; negative: number; neutral: number }
+): Promise<{ summary: string; keyThemes: string[] }> {
+  const sampleTweets = tweets.slice(0, 30).map((t) => `[${t.sentiment}] ${t.text}`).join("\n");
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-5-mini",
+    max_completion_tokens: 1024,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You analyze Twitter user accounts. Return ONLY a JSON object with: {\"summary\": \"2-3 paragraph personality and communication style analysis\", \"keyThemes\": [\"theme1\", \"theme2\", ...]} (max 6 themes). Focus on their writing style, topics they care about, tone, and engagement patterns. Be specific and insightful.",
+      },
+      {
+        role: "user",
+        content: `User: @${username} (${profile.name})
+Bio: ${profile.description || "No bio"}
+Stats: ${profile.followersCount} followers, ${profile.followingCount} following, ${profile.tweetCount} total tweets
+Sentiment: ${sentimentBreakdown.positive} positive, ${sentimentBreakdown.negative} negative, ${sentimentBreakdown.neutral} neutral
+Sample tweets:
+${sampleTweets}`,
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content?.trim() || "";
+  try {
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return {
+      summary: `Unable to generate summary for @${username}.`,
+      keyThemes: [username],
+    };
+  }
+}
+
 export async function generateSummary(
   keyphrase: string,
   tweets: Array<{ text: string; sentiment: string }>,

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twitter/X News Listener Dashboard — a full-stack app that searches Twitter by keyphrase and produces a rich analytics dashboard with sentiment analysis, top sources, and AI-generated summaries.
+Tweet Pulse — a full-stack Twitter/X News Intelligence Dashboard with two main sections: Keyword Search Analytics and User Account Analysis.
 
 ## Stack
 
@@ -15,8 +15,8 @@ Twitter/X News Listener Dashboard — a full-stack app that searches Twitter by 
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
-- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + Recharts
-- **AI**: OpenAI via Replit AI Integrations (sentiment analysis + summaries)
+- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + Recharts + wouter (routing)
+- **AI**: OpenAI via Replit AI Integrations (`gpt-5-mini` for sentiment + summaries)
 - **External API**: Twitter/X API v2 (Bearer Token)
 
 ## Structure
@@ -41,13 +41,29 @@ artifacts-monorepo/
 
 ## Key Features
 
+### Keyword Search Section (/)
 - **Keyphrase Search**: Enter a topic and search Twitter's recent tweets
 - **Sentiment Analysis**: AI-powered per-tweet sentiment scoring (positive/negative/neutral)
 - **Dashboard Analytics**: Stat cards, sentiment pie chart, volume timeline, top sources table
 - **Top Hashtags & Mentions**: Bar charts showing trending tags
 - **AI Summary**: GPT-generated narrative summary with key themes
 - **Search History**: Sidebar to revisit previous searches stored in PostgreSQL
+- **Delete History**: Trash icon on hover to remove search records
+- **Clickable Profiles**: Author names/usernames link to x.com profiles
+- **CSV Export**: Download search results as CSV
 - **Tweet Feed**: Individual tweets with sentiment badges and engagement stats
+
+### User Account Analysis Section (/user-analysis)
+- **Username Lookup**: Fetch Twitter user profile by username
+- **Profile Card**: Avatar, bio, follower/following/tweet counts, join date, x.com link
+- **Sentiment Analysis**: Per-tweet sentiment on user's recent tweets
+- **Engagement Metrics**: Avg likes, retweets, engagement rate stat cards
+- **AI Account Analysis**: GPT-generated personality/style analysis with key themes
+- **Posting Patterns**: Day-of-week and hour-of-day bar charts
+- **Top Tweets Table**: Ranked by engagement with sentiment badges
+- **Top Hashtags & Mentions**: Horizontal bar charts
+- **Analysis History**: Sidebar with delete support
+- **CSV Export**: Download user analysis as CSV
 
 ## Environment Variables
 
@@ -61,10 +77,16 @@ artifacts-monorepo/
 - `POST /api/twitter/search` — Search Twitter, analyze sentiment, return full analytics
 - `GET /api/twitter/searches` — List previous search history
 - `GET /api/twitter/searches/:id` — Get a previous search result
+- `DELETE /api/twitter/searches/:id` — Delete a search record
+- `POST /api/twitter/user-analysis` — Analyze a Twitter user account
+- `GET /api/twitter/user-analyses` — List previous user analyses
+- `GET /api/twitter/user-analyses/:id` — Get a previous user analysis
+- `DELETE /api/twitter/user-analyses/:id` — Delete a user analysis record
 
 ## Database Schema
 
-- `searches` table — Stores keyphrase, sentiment data, top sources, hashtags, mentions, tweets, AI summary, all as JSONB columns for flexibility
+- `searches` table — Stores keyphrase search results with sentiment data, top sources, hashtags, mentions, tweets, AI summary (JSONB columns)
+- `user_analyses` table — Stores user account analysis results with profile data, posting patterns, top tweets, sentiment data, AI summary (JSONB columns)
 
 ## TypeScript & Composite Projects
 
@@ -79,15 +101,15 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/web` (`@workspace/web`)
 
-React + Vite frontend with dark theme dashboard. Uses Recharts for charts, shadcn/ui for components, wouter for routing.
+React + Vite frontend with dark theme dashboard. Uses Recharts for charts, shadcn/ui for components, wouter for routing. Two pages: `/` (keyword search) and `/user-analysis` (user analysis).
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server. Routes in `src/routes/`. Twitter search and AI analysis in `src/lib/`.
+Express 5 API server. Routes in `src/routes/`. Twitter search/user analysis and AI analysis in `src/lib/`.
 
 ### `lib/db` (`@workspace/db`)
 
-Database layer with `searches` table for persisting search results.
+Database layer with `searches` and `user_analyses` tables for persisting results.
 
 ### `lib/integrations-openai-ai-server`
 

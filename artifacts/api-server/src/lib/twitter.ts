@@ -1,9 +1,12 @@
 const TWITTER_BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN;
 
-interface TwitterUser {
+export interface TwitterUser {
   id: string;
   name: string;
   username: string;
+  description?: string;
+  created_at?: string;
+  verified?: boolean;
   public_metrics?: {
     followers_count: number;
     following_count: number;
@@ -13,7 +16,7 @@ interface TwitterUser {
   profile_image_url?: string;
 }
 
-interface TwitterTweet {
+export interface TwitterTweet {
   id: string;
   text: string;
   author_id: string;
@@ -41,15 +44,33 @@ interface TwitterSearchResponse {
   };
 }
 
+interface TwitterUserLookupResponse {
+  data?: TwitterUser;
+  errors?: Array<{ detail: string }>;
+}
+
+interface TwitterUserTweetsResponse {
+  data?: TwitterTweet[];
+  meta?: {
+    result_count: number;
+    next_token?: string;
+  };
+}
+
 export interface RawTweetData {
   tweet: TwitterTweet;
   author: TwitterUser;
 }
 
-export async function searchTweets(keyphrase: string, maxResults: number = 50): Promise<RawTweetData[]> {
+function ensureToken(): string {
   if (!TWITTER_BEARER_TOKEN) {
     throw new Error("TWITTER_BEARER_TOKEN is not set");
   }
+  return TWITTER_BEARER_TOKEN;
+}
+
+export async function searchTweets(keyphrase: string, maxResults: number = 50): Promise<RawTweetData[]> {
+  const token = ensureToken();
 
   const clampedMax = Math.min(Math.max(maxResults, 10), 100);
 
@@ -64,9 +85,7 @@ export async function searchTweets(keyphrase: string, maxResults: number = 50): 
   const url = `https://api.twitter.com/2/tweets/search/recent?${params.toString()}`;
 
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${TWITTER_BEARER_TOKEN}`,
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!response.ok) {
@@ -95,4 +114,61 @@ export async function searchTweets(keyphrase: string, maxResults: number = 50): 
       username: "unknown",
     },
   }));
+}
+
+export async function getUserByUsername(username: string): Promise<TwitterUser> {
+  const token = ensureToken();
+
+  const cleanUsername = username.replace(/^@/, "");
+
+  const params = new URLSearchParams({
+    "user.fields": "name,username,description,created_at,verified,public_metrics,profile_image_url",
+  });
+
+  const url = `https://api.twitter.com/2/users/by/username/${cleanUsername}?${params.toString()}`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Twitter API error (${response.status}): ${errorText}`);
+  }
+
+  const json = (await response.json()) as TwitterUserLookupResponse;
+
+  if (!json.data) {
+    const errMsg = json.errors?.[0]?.detail || "User not found";
+    throw new Error(errMsg);
+  }
+
+  return json.data;
+}
+
+export async function getUserTweets(userId: string, maxResults: number = 100): Promise<TwitterTweet[]> {
+  const token = ensureToken();
+
+  const clampedMax = Math.min(Math.max(maxResults, 5), 100);
+
+  const params = new URLSearchParams({
+    max_results: String(clampedMax),
+    "tweet.fields": "created_at,public_metrics,entities,author_id",
+    exclude: "retweets",
+  });
+
+  const url = `https://api.twitter.com/2/users/${userId}/tweets?${params.toString()}`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Twitter API error (${response.status}): ${errorText}`);
+  }
+
+  const json = (await response.json()) as TwitterUserTweetsResponse;
+
+  return json.data || [];
 }

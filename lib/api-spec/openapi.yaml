@@ -93,6 +93,122 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSearch
+      tags: [twitter]
+      summary: Delete a previous search
+      description: Deletes a search result by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /twitter/user-analysis:
+    post:
+      operationId: analyzeUser
+      tags: [twitter]
+      summary: Analyze a Twitter user account
+      description: Fetches user profile and recent tweets, analyzes sentiment, and returns comprehensive analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAnalysisRequest"
+      responses:
+        "200":
+          description: User analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAnalysisResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /twitter/user-analyses:
+    get:
+      operationId: listUserAnalyses
+      tags: [twitter]
+      summary: List previous user analyses
+      description: Returns a list of all previous user analyses
+      responses:
+        "200":
+          description: List of user analyses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAnalysisHistoryItem"
+
+  /twitter/user-analyses/{id}:
+    get:
+      operationId: getUserAnalysis
+      tags: [twitter]
+      summary: Get a previous user analysis
+      description: Returns the full result for a previous user analysis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAnalysisResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteUserAnalysis
+      tags: [twitter]
+      summary: Delete a previous user analysis
+      description: Deletes a user analysis by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -111,6 +227,14 @@ components:
           type: string
       required:
         - error
+
+    DeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
 
     TwitterSearchRequest:
       type: object
@@ -312,3 +436,225 @@ components:
         - totalTweets
         - overallSentimentScore
         - searchedAt
+
+    UserAnalysisRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        maxResults:
+          type: integer
+          default: 100
+      required:
+        - username
+
+    UserProfileData:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: ["string", "null"]
+        verified:
+          type: boolean
+        profileImageUrl:
+          type: ["string", "null"]
+        followersCount:
+          type: integer
+        followingCount:
+          type: integer
+        tweetCount:
+          type: integer
+        listedCount:
+          type: integer
+      required:
+        - id
+        - name
+        - username
+        - verified
+        - followersCount
+        - followingCount
+        - tweetCount
+        - listedCount
+
+    DayOfWeekCount:
+      type: object
+      properties:
+        day:
+          type: string
+        count:
+          type: integer
+      required:
+        - day
+        - count
+
+    HourCount:
+      type: object
+      properties:
+        hour:
+          type: integer
+        count:
+          type: integer
+      required:
+        - hour
+        - count
+
+    TopTweetItem:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        likes:
+          type: integer
+        retweets:
+          type: integer
+        replies:
+          type: integer
+        totalEngagement:
+          type: integer
+        sentiment:
+          type: string
+        sentimentScore:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - text
+        - likes
+        - retweets
+        - replies
+        - totalEngagement
+        - sentiment
+        - sentimentScore
+        - createdAt
+
+    UserTweetItem:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+        sentimentScore:
+          type: number
+        likes:
+          type: integer
+        retweets:
+          type: integer
+        replies:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - text
+        - sentiment
+        - sentimentScore
+        - likes
+        - retweets
+        - replies
+        - createdAt
+
+    UserAnalysisResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        profileData:
+          $ref: "#/components/schemas/UserProfileData"
+        totalTweets:
+          type: integer
+        averageEngagement:
+          type: number
+        overallSentimentScore:
+          type: number
+        summary:
+          type: string
+        keyThemes:
+          type: array
+          items:
+            type: string
+        sentimentBreakdown:
+          $ref: "#/components/schemas/SentimentBreakdown"
+        topHashtags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        topMentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+        volumeOverTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/VolumePoint"
+        postingByDayOfWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayOfWeekCount"
+        postingByHour:
+          type: array
+          items:
+            $ref: "#/components/schemas/HourCount"
+        topTweets:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopTweetItem"
+        tweets:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTweetItem"
+        analyzedAt:
+          type: string
+      required:
+        - id
+        - username
+        - profileData
+        - totalTweets
+        - averageEngagement
+        - overallSentimentScore
+        - summary
+        - keyThemes
+        - sentimentBreakdown
+        - topHashtags
+        - topMentions
+        - volumeOverTime
+        - postingByDayOfWeek
+        - postingByHour
+        - topTweets
+        - tweets
+        - analyzedAt
+
+    UserAnalysisHistoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        totalTweets:
+          type: integer
+        overallSentimentScore:
+          type: number
+        analyzedAt:
+          type: string
+      required:
+        - id
+        - username
+        - totalTweets
+        - overallSentimentScore
+        - analyzedAt

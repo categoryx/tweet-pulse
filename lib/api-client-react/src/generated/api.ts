@@ -17,11 +17,15 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  DeleteResponse,
   ErrorResponse,
   HealthStatus,
   SearchHistoryItem,
   TwitterSearchRequest,
   TwitterSearchResult,
+  UserAnalysisHistoryItem,
+  UserAnalysisRequest,
+  UserAnalysisResult,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -359,3 +363,424 @@ export function useGetSearchResult<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Deletes a search result by ID
+ * @summary Delete a previous search
+ */
+export const getDeleteSearchUrl = (id: number) => {
+  return `/api/twitter/searches/${id}`;
+};
+
+export const deleteSearch = async (
+  id: number,
+  options?: RequestInit,
+): Promise<DeleteResponse> => {
+  return customFetch<DeleteResponse>(getDeleteSearchUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSearchMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSearch>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSearch>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSearch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSearch>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSearch(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSearchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSearch>>
+>;
+
+export type DeleteSearchMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a previous search
+ */
+export const useDeleteSearch = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSearch>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSearch>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSearchMutationOptions(options));
+};
+
+/**
+ * Fetches user profile and recent tweets, analyzes sentiment, and returns comprehensive analytics
+ * @summary Analyze a Twitter user account
+ */
+export const getAnalyzeUserUrl = () => {
+  return `/api/twitter/user-analysis`;
+};
+
+export const analyzeUser = async (
+  userAnalysisRequest: UserAnalysisRequest,
+  options?: RequestInit,
+): Promise<UserAnalysisResult> => {
+  return customFetch<UserAnalysisResult>(getAnalyzeUserUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userAnalysisRequest),
+  });
+};
+
+export const getAnalyzeUserMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeUser>>,
+    TError,
+    { data: BodyType<UserAnalysisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeUser>>,
+  TError,
+  { data: BodyType<UserAnalysisRequest> },
+  TContext
+> => {
+  const mutationKey = ["analyzeUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeUser>>,
+    { data: BodyType<UserAnalysisRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return analyzeUser(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeUser>>
+>;
+export type AnalyzeUserMutationBody = BodyType<UserAnalysisRequest>;
+export type AnalyzeUserMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Analyze a Twitter user account
+ */
+export const useAnalyzeUser = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeUser>>,
+    TError,
+    { data: BodyType<UserAnalysisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeUser>>,
+  TError,
+  { data: BodyType<UserAnalysisRequest> },
+  TContext
+> => {
+  return useMutation(getAnalyzeUserMutationOptions(options));
+};
+
+/**
+ * Returns a list of all previous user analyses
+ * @summary List previous user analyses
+ */
+export const getListUserAnalysesUrl = () => {
+  return `/api/twitter/user-analyses`;
+};
+
+export const listUserAnalyses = async (
+  options?: RequestInit,
+): Promise<UserAnalysisHistoryItem[]> => {
+  return customFetch<UserAnalysisHistoryItem[]>(getListUserAnalysesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListUserAnalysesQueryKey = () => {
+  return [`/api/twitter/user-analyses`] as const;
+};
+
+export const getListUserAnalysesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUserAnalyses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUserAnalyses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListUserAnalysesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listUserAnalyses>>
+  > = ({ signal }) => listUserAnalyses({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listUserAnalyses>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListUserAnalysesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUserAnalyses>>
+>;
+export type ListUserAnalysesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List previous user analyses
+ */
+
+export function useListUserAnalyses<
+  TData = Awaited<ReturnType<typeof listUserAnalyses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUserAnalyses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListUserAnalysesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the full result for a previous user analysis
+ * @summary Get a previous user analysis
+ */
+export const getGetUserAnalysisUrl = (id: number) => {
+  return `/api/twitter/user-analyses/${id}`;
+};
+
+export const getUserAnalysis = async (
+  id: number,
+  options?: RequestInit,
+): Promise<UserAnalysisResult> => {
+  return customFetch<UserAnalysisResult>(getGetUserAnalysisUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUserAnalysisQueryKey = (id: number) => {
+  return [`/api/twitter/user-analyses/${id}`] as const;
+};
+
+export const getGetUserAnalysisQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUserAnalysis>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUserAnalysis>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetUserAnalysisQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserAnalysis>>> = ({
+    signal,
+  }) => getUserAnalysis(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getUserAnalysis>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetUserAnalysisQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUserAnalysis>>
+>;
+export type GetUserAnalysisQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a previous user analysis
+ */
+
+export function useGetUserAnalysis<
+  TData = Awaited<ReturnType<typeof getUserAnalysis>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUserAnalysis>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUserAnalysisQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Deletes a user analysis by ID
+ * @summary Delete a previous user analysis
+ */
+export const getDeleteUserAnalysisUrl = (id: number) => {
+  return `/api/twitter/user-analyses/${id}`;
+};
+
+export const deleteUserAnalysis = async (
+  id: number,
+  options?: RequestInit,
+): Promise<DeleteResponse> => {
+  return customFetch<DeleteResponse>(getDeleteUserAnalysisUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteUserAnalysisMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUserAnalysis>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteUserAnalysis>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteUserAnalysis"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteUserAnalysis>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteUserAnalysis(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteUserAnalysisMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteUserAnalysis>>
+>;
+
+export type DeleteUserAnalysisMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a previous user analysis
+ */
+export const useDeleteUserAnalysis = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUserAnalysis>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteUserAnalysis>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteUserAnalysisMutationOptions(options));
+};

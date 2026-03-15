@@ -57,13 +57,26 @@ class OpenAIClient {
             } while ($active && $status === CURLM_OK);
 
             foreach ($handles as $tweetId => $ch) {
+                $curlError = curl_error($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $body = curl_multi_getcontent($ch);
                 curl_multi_remove_handle($mh, $ch);
                 curl_close($ch);
 
+                if ($curlError || $httpCode < 200 || $httpCode >= 300 || empty($body)) {
+                    error_log("Sentiment API error for tweet {$tweetId}: HTTP {$httpCode}, cURL: {$curlError}");
+                    $results[$tweetId] = ['sentiment' => 'neutral', 'score' => 0];
+                    continue;
+                }
+
                 try {
                     $resp = json_decode($body, true);
-                    $content = $resp['choices'][0]['message']['content'] ?? '';
+                    if (!isset($resp['choices'][0]['message']['content'])) {
+                        error_log("Sentiment API unexpected response for tweet {$tweetId}: " . substr($body, 0, 200));
+                        $results[$tweetId] = ['sentiment' => 'neutral', 'score' => 0];
+                        continue;
+                    }
+                    $content = $resp['choices'][0]['message']['content'];
                     $content = preg_replace('/```json\s*/', '', $content);
                     $content = preg_replace('/```/', '', $content);
                     $parsed = json_decode(trim($content), true);
@@ -72,6 +85,7 @@ class OpenAIClient {
                         'score' => (float)($parsed['score'] ?? 0),
                     ];
                 } catch (Exception $e) {
+                    error_log("Sentiment parse error for tweet {$tweetId}: " . $e->getMessage());
                     $results[$tweetId] = ['sentiment' => 'neutral', 'score' => 0];
                 }
             }
